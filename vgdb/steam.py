@@ -3,6 +3,9 @@ import requests
 import time
 import xml.etree.ElementTree as ET
 
+import numpy as np
+from tqdm import tqdm
+
 
 class SteamClient():
     """
@@ -23,6 +26,8 @@ class SteamClient():
         self.user_id = user_id
         self.web_api_key = web_api_key
 
+        self.WAIT_TIME = 0.2
+
     def get_library(self):
         """
         Gets Steam library games using Steam url name
@@ -32,18 +37,44 @@ class SteamClient():
         list of dicts
             Records of games in Steam library
         """
-        r = requests.get(f'https://steamcommunity.com/id/{self.url_name}/games?tab=all&xml=1', timeout=60)
-        time.sleep(0.1)
-        root = ET.fromstring(r.text)[2]
-    
-        games = []
-        for library_item in root.findall('game'):
-            game = {}
-            game['steam_appid'] = int(library_item.find('appID').text)
-            game['title'] = library_item.find('name').text
-            games.append(game)
+        # Get library appids, title, and play time
+        r = requests.get(f'https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key={self.web_api_key}&steamid={self.user_id}&include_appinfo=1&include_played_free_games=1')
+        time.sleep(self.WAIT_TIME)
+        library_list = json.loads(r.text)['response']['games']
 
-        return games
+        games_records = []
+        for item in tqdm(library_list, desc='Steam Library'):
+            game = {}
+            game['steam_appid'] = item['appid']
+            game['title'] = item['name']
+            game['playtime'] = item['playtime_forever']
+            game['last_played'] = item['rtime_last_played']
+            games_records.append(game)
+    
+        # Get achievements per appid
+        for game in tqdm(games_records, desc='Steam Library Achievements'):
+            # TODO: Abstracting into own fn
+            r = requests.get(f'http://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v0001/?appid={game["steam_appid"]}&key={self.web_api_key}&steamid={self.user_id}')
+            time.sleep(self.WAIT_TIME)
+            achievements_json = json.loads(r.text)
+            
+            completed, total, progress = None, None, None
+            if achievements_json['playerstats']['success'] and 'achievements' in achievements_json['playerstats']:
+                achievements_list = achievements_json['playerstats']['achievements']
+                total = 0
+                completed = 0
+                for a in achievements_list:
+                    total += 1
+                    completed += a['achieved']  # 1 or 0 based on whether completed
+                progress = np.round(completed/total*100, 1)                
+
+            game['achievement_progress'] = progress
+            game['completed_achievements'] = completed
+            game['total_achievements'] = total
+
+        # TODO Add Store data
+
+        return games_records
 
     def get_wishlist(self):
         """
@@ -55,7 +86,7 @@ class SteamClient():
             Records of games in Steam wishlist
         """
         # Iterate through wishlist pages
-        games = []
+        games_records = []
         page_counter = 0
         while page_counter >= 0:
             r = requests.get(f'https://store.steampowered.com/wishlist/profiles/{self.user_id}/wishlistdata/?p={page_counter}', timeout=60)
@@ -64,9 +95,11 @@ class SteamClient():
             wishlist = json.loads(r.text)
             if wishlist:
                 steam_ids = list(wishlist.keys())
-                games += [{'steam_appid': int(steam_id), 'title': wishlist[steam_id]['name']} for steam_id in steam_ids]
+                games_records += [{'steam_appid': int(steam_id), 'title': wishlist[steam_id]['name']} for steam_id in steam_ids]
                 page_counter += 1
             else:
                 page_counter = -1
 
-        return games
+        # TODO Add Store data
+
+        return games_records
