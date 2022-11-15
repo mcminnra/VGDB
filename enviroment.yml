@@ -6,6 +6,10 @@ dependencies:
   - python>=3.8
   - lxml
   - numpy
+  - pandas
   - requests
   - sqlalchemy
   - tqdm
+  - pip
+  - pip:
+    - igdb-api-v4
