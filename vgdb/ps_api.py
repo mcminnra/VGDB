@@ -4,7 +4,6 @@ import time
 from urllib.parse import urlparse
 from urllib.parse import parse_qs
 
-from selenium import webdriver
 from tqdm import tqdm
 
 
@@ -93,12 +92,11 @@ class PlaystationClient():
             time.sleep(self.WAIT_TIME)
             # NOTE: In the future, you can supply multiple np_title_ids => npTitleIds={",".join(query_np_title_ids)} of maybe max 5 ids
             trophy_title = json.loads(r.text)['titles'][0]
-            print(r.text)
 
             if len(trophy_title['trophyTitles']) > 0:
                 title['ps_np_title_id'] = trophy_title['npTitleId']
                 title['ps_np_comm_id'] = trophy_title['trophyTitles'][0]['npCommunicationId']
-                title['trophy_progress'] = trophy_title['trophyTitles'][0]['progress']  # Can there be multiple trophy sets per npTitleId?
+                title['trophy_weighted_progress'] = trophy_title['trophyTitles'][0]['progress']  # Can there be multiple trophy sets per npTitleId?
                 title['completed_trophies'] = \
                     int(trophy_title['trophyTitles'][0]["earnedTrophies"]['bronze']) +\
                     int(trophy_title['trophyTitles'][0]["earnedTrophies"]['silver']) +\
@@ -111,38 +109,3 @@ class PlaystationClient():
                     int(trophy_title['trophyTitles'][0]["definedTrophies"]['platinum'])
 
         return titles
-
-    def get_purchased_games(self):
-        #  "https://web.np.playstation.com/api/graphql/v1/op?operationName=getPurchasedGameList&variables={{\"isActive\":true,\"platform\":[\"ps3\",\"ps4\",\"ps5\"],\"start\":{0},\"size\":{1},\"subscriptionService\":\"NONE\"}}&extensions={{\"persistedQuery\":{{\"version\":1,\"sha256Hash\":\"2c045408b0a4d0264bb5a3edfed4efd49fb4749cf8d216be9043768adff905e2\"}}}}
-        # Get auth code
-
-        # Init headless chrome
-        # op = webdriver.ChromeOptions()
-        # op.add_argument('headless')
-        # driver = webdriver.Chrome(options=op)
-
-        driver = webdriver.Chrome(
-            executable_path='/mnt/c/Users/mcmin/projects/VGDB/bin/chromedriver'
-        )
-
-        driver.get('https://web.np.playstation.com/api/session/v1/signin?redirect_uri=https://io.playstation.com/central/auth/login%3FpostSignInURL=https://www.playstation.com/home%26cancelURL=https://www.playstation.com/home&smcid=web:pdc')
-
-        # # Get cookies from a PS login
-        # # NOTE: You need to be log
-        # session = requests.Session()
-        # print(session.cookies.get_dict())
-        # login_url = 'https://web.np.playstation.com/api/session/v1/signin?redirect_uri=https://io.playstation.com/central/auth/login%3FpostSignInURL=https://www.playstation.com/home%26cancelURL=https://www.playstation.com/home&smcid=web:pdc'
-        # r = session.get(
-        #     login_url
-        # )
-        # print(session.cookies.get_dict())
-
-        # r = session.get(
-        #     'https://web.np.playstation.com/api/graphql/v1/op?operationName=getPurchasedGameList&variables={{"isActive":true,"platform":["ps3","ps4","ps5"],"start":0,"size":24,"subscriptionService":"NONE"}}&extensions={{"persistedQuery":{{"version":1,"sha256Hash":"2c045408b0a4d0264bb5a3edfed4efd49fb4749cf8d216be9043768adff905e2"}}}}',
-        #     cookies=cookies,
-        #     allow_redirects=False
-        # )
-        # print(r.text)
-
-        
-
