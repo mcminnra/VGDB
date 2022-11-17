@@ -4,6 +4,7 @@ import time
 from urllib.parse import urlparse
 from urllib.parse import parse_qs
 
+import numpy as np
 from tqdm import tqdm
 
 
@@ -94,7 +95,6 @@ class PlaystationClient():
             trophy_title = json.loads(r.text)['titles'][0]
 
             if len(trophy_title['trophyTitles']) > 0:
-                title['ps_np_title_id'] = trophy_title['npTitleId']
                 title['ps_np_comm_id'] = trophy_title['trophyTitles'][0]['npCommunicationId']
                 title['trophy_weighted_progress'] = trophy_title['trophyTitles'][0]['progress']  # Can there be multiple trophy sets per npTitleId?
                 title['completed_trophies'] = \
@@ -107,5 +107,24 @@ class PlaystationClient():
                     int(trophy_title['trophyTitles'][0]["definedTrophies"]['silver']) +\
                     int(trophy_title['trophyTitles'][0]["definedTrophies"]['gold']) +\
                     int(trophy_title['trophyTitles'][0]["definedTrophies"]['platinum'])
+
+        # Process playtime into a float
+        for title in titles:
+            playtime_str = title['playtime']
+            playtime_str = playtime_str[2:]  # Remove 'PT' at start
+
+            # Example: 'PT14H5M57S'
+            playtime_hours = 0
+            if 'H' in playtime_str:
+                hours, playtime_str = playtime_str.split('H')
+                playtime_hours += float(hours)
+            if 'M' in playtime_str:
+                minutes, playtime_str = playtime_str.split('M')
+                playtime_hours += (float(minutes)/60)
+            if 'S' in playtime_str:
+                seconds, playtime_str = playtime_str.split('S')
+                playtime_hours += (float(seconds)/360)
+
+            title['playtime'] = np.round(playtime_hours, 1)
 
         return titles
