@@ -2,6 +2,7 @@ import json
 import pathlib
 import time
 
+from fuzzywuzzy import fuzz
 from igdb.wrapper import IGDBWrapper
 import requests
 
@@ -75,5 +76,31 @@ class IGDBClient():
 
         elif len(websites_response) == 1:
             igdb_id = int(websites_response[0]['game'])
+
+        return igdb_id
+
+    def get_igdb_id_by_title(self, title: str) -> int:
+        """
+        Get IGDB ID using title
+        """
+        # fields id, aggregated_rating, aggregated_rating_count, category.*, first_release_date, genres.*, keywords.*, name, rating, rating_count, storyline, summary, tags.*, themes.*, total_rating, total_rating_count;
+        search_string = title.replace('®', '').replace('™', '')
+        byte_array = self._igdb_wrapper.api_request(
+            'games',
+            f'fields id, name; search "{search_string}"; limit 500;'
+        )
+        time.sleep(self.WAIT_TIME)
+        games_response = json.loads(byte_array)
+
+        igdb_id = None
+        if len(games_response) > 1:
+            # Fuzzy match best result from search to input title
+            games_fuzzy = []
+            for game in games_response:
+                games_fuzzy.append((game['id'], game['name'], fuzz.ratio(title, game['name'])))
+            games_fuzzy = sorted(games_fuzzy, key=lambda x: x[2], reverse=True)
+            igdb_id = games_fuzzy[0][0]
+        elif len(games_response) == 1:
+            igdb_id = games_response[0]['id']
 
         return igdb_id
