@@ -1,10 +1,11 @@
+from datetime import datetime
 import json
-import requests
 import time
 from urllib.parse import urlparse
 from urllib.parse import parse_qs
 
 import numpy as np
+import requests
 from tqdm import tqdm
 
 
@@ -81,6 +82,11 @@ class PlaystationClient():
             } for title in titles
         ]
 
+        # Convert datetime str to unix epoch
+        for title in titles:
+            title['first_played'] = datetime.strptime(title['first_played'], "%Y-%m-%dT%H:%M:%S.%fZ").timestamp()
+            title['last_played'] = datetime.strptime(title['last_played'], "%Y-%m-%dT%H:%M:%S.%fZ").timestamp()
+
         # Get trophy information
         for title in tqdm(titles, desc='Playstation Trophies'):
             headers = {
@@ -125,6 +131,8 @@ class PlaystationClient():
                 seconds, playtime_str = playtime_str.split('S')
                 playtime_hours += (float(seconds)/360)
 
-            title['playtime'] = np.round(playtime_hours, 1)
+            playtime_minutes = playtime_hours*60
+
+            title['playtime'] = np.round(playtime_minutes, 1)
 
         return titles
