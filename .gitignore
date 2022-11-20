@@ -1,5 +1,6 @@
 # User-defined ignores
 test.py
+config.py
 .DS_store
 
 # Byte-compiled / optimized / DLL files
