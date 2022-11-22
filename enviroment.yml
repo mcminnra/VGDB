@@ -15,4 +15,4 @@ dependencies:
     - fuzzywuzzy
     - igdb-api-v4
     - python-Levenshtein
-    - requests-threads
+    - requests-futures
