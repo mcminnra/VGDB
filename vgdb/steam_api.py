@@ -55,24 +55,9 @@ class SteamClient():
     
         # Get achievements per appid
         for game in tqdm(games_records, desc='Steam Library Achievements'):
-            # TODO: Abstracting into own fn
-            r = requests.get(f'http://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v0001/?appid={game["steam_appid"]}&key={self.web_api_key}&steamid={self.user_id}')
-            time.sleep(self.WAIT_TIME)
-            achievements_json = json.loads(r.text)
-            
-            completed, total, progress = None, None, None
-            if achievements_json['playerstats']['success'] and 'achievements' in achievements_json['playerstats']:
-                achievements_list = achievements_json['playerstats']['achievements']
-                total = 0
-                completed = 0
-                for a in achievements_list:
-                    total += 1
-                    completed += a['achieved']  # 1 or 0 based on whether completed
-                progress = np.round(completed/total*100, 1)                
-
-            game['achievement_progress'] = progress
-            game['completed_achievements'] = completed
-            game['total_achievements'] = total
+            achieve_data = self._get_achievements_data(game['steam_appid'])
+            for key in achieve_data:
+                game[key] = achieve_data[key]
 
         # Steam store data
         for game in tqdm(games_records, desc='Steam Library Store Page Data'):
@@ -122,6 +107,37 @@ class SteamClient():
                 game[key] = store_data[key]
 
         return games_records
+
+    def _get_achievements_data(self, appid):
+        """
+        Returns achievement data for a given appid
+
+        Returns
+        -------
+        dict
+            Various achievement metadata for appid
+        """
+        achieve_data = {}
+
+        r = requests.get(f'http://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v0001/?appid={appid}&key={self.web_api_key}&steamid={self.user_id}')
+        time.sleep(self.WAIT_TIME)
+        achievements_json = json.loads(r.text)
+        
+        completed, total, progress = None, None, None
+        if achievements_json['playerstats']['success'] and 'achievements' in achievements_json['playerstats']:
+            achievements_list = achievements_json['playerstats']['achievements']
+            total = 0
+            completed = 0
+            for a in achievements_list:
+                total += 1
+                completed += a['achieved']  # 1 or 0 based on whether completed
+            progress = np.round(completed/total*100, 1)                
+
+        achieve_data['achievement_progress'] = progress
+        achieve_data['completed_achievements'] = completed
+        achieve_data['total_achievements'] = total
+
+        return achieve_data
 
     def _get_store_page_data(self, appid):
         """
