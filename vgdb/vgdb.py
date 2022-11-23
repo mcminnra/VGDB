@@ -2,6 +2,7 @@
 
 import pandas as pd
 from sqlalchemy import create_engine, text
+from ratelimiter import RateLimiter
 from tqdm import tqdm
 
 from igdb_api import IGDBClient
@@ -35,12 +36,13 @@ def update_db():
             igdb_client_id,
             igdb_client_secret
         )
+        igdb_ratelimiter = RateLimiter(max_calls=4, period=1)
         ps_client = PlaystationClient(
             ps_npsso
         )
 
         # =====================================================================
-        # Get steam library and wishlist
+        # Get Steam
         # =====================================================================
         steam_library_records = steam_client.get_library()
         steam_wishlist_records = steam_client.get_wishlist()
@@ -257,7 +259,8 @@ def update_db():
         df_steam_appid_mapping['igdb_id'] = None
 
         for idx, row in tqdm(df_steam_appid_mapping.iterrows(), total=df_steam_appid_mapping.shape[0], desc='Map steam_appid to igdb_id'):
-            igdb_id = igdb_client.get_igdb_id_by_steam_appid(int(row['steam_appid']))
+            with igdb_ratelimiter:
+                igdb_id = igdb_client.get_igdb_id_by_steam_appid(int(row['steam_appid']))
             if igdb_id:
                 df_steam_appid_mapping.at[idx, 'igdb_id'] = igdb_id
             else:
@@ -277,7 +280,8 @@ def update_db():
         df_ps_np_title_id_mapping['igdb_id'] = None
 
         for idx, row in tqdm(df_ps_np_title_id_mapping.iterrows(), total=df_ps_np_title_id_mapping.shape[0], desc='Map ps_np_title_id to igdb_id'):
-            igdb_id = igdb_client.get_igdb_id_by_title(row['title'])
+            with igdb_ratelimiter:
+                igdb_id = igdb_client.get_igdb_id_by_title(row['title'])
             if igdb_id:
                 df_ps_np_title_id_mapping.at[idx, 'igdb_id'] = igdb_id
             else:

@@ -7,7 +7,6 @@ from lxml import html
 import numpy as np
 import requests
 from requests_futures.sessions import FuturesSession
-from tqdm import tqdm
 
 
 class SteamClient():

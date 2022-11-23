@@ -13,8 +13,6 @@ class IGDBClient():
         # Init wrapper
         access_token = self._get_access_token(client_id, client_secret)
         self._igdb_wrapper = IGDBWrapper(client_id, access_token)
-        
-        self.WAIT_TIME = 0.2
 
     def _get_access_token(self, client_id: str, client_secret: str) -> str:
         token_path = pathlib.Path.home() / ".vgdb/"
@@ -52,7 +50,6 @@ class IGDBClient():
             'websites',
             f'fields *; where url = *"{search_string}"* & category = 13;'
         )
-        time.sleep(self.WAIT_TIME)
         websites_response = json.loads(byte_array)
 
         # More than 1 game has the same steam id website. Take the one with the most reviews or first released
@@ -62,7 +59,6 @@ class IGDBClient():
                 'games',
                 f'fields *; where id = {search_igdb_ids} & category != (5, 6, 7);'  # No mods, episodes, or seasons
             )
-            time.sleep(self.WAIT_TIME)
             games_response = json.loads(byte_array)
 
             for game in games_response:
@@ -89,7 +85,6 @@ class IGDBClient():
             'games',
             f'fields id, name; search "{search_string}"; limit 500;'
         )
-        time.sleep(self.WAIT_TIME)
         games_response = json.loads(byte_array)
 
         igdb_id = None
