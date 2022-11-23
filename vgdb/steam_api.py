@@ -132,9 +132,17 @@ class SteamClient():
         games_with_achieves = []
         for future in as_completed(futures):
             try:
+                # Get response
                 resp = future.result()
                 game = future.game
                 achievements_json = resp.json()
+
+                # Handle status
+                if resp.status_code == 400:
+                    print(f'No achievements for [{game["steam_appid"]}] {game["title"]}')
+                    continue
+                elif resp.status_code > 299:
+                    raise Exception
 
                 # Process achievements
                 completed, total, progress = None, None, None
@@ -154,7 +162,7 @@ class SteamClient():
                 game['total_achievements'] = total
                 games_with_achieves.append(game)
             except:
-                print(resp)
+                print(f'[{resp.status_code}] on {future.game["title"]}')
                 import sys; sys.exit(1)
 
         return games_with_achieves
@@ -172,9 +180,14 @@ class SteamClient():
         games_with_store_data = []
         for future in as_completed(futures):
             try:
+                # Get response
                 resp = future.result()
                 game = future.game
                 steam_store_tree = html.fromstring(resp.text)
+
+                # Handle status
+                if resp.status_code > 299:
+                    raise Exception
 
                 # TODO: Check to see if HTML is malformed
 
@@ -211,7 +224,7 @@ class SteamClient():
                 games_with_store_data.append(game)
             
             except:
-                print(resp)
+                print(f'[{resp.status_code}] on {future.game["title"]}')
                 import sys; sys.exit(1)
 
         return games_with_store_data 
