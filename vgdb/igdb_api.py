@@ -14,7 +14,7 @@ class IGDBClient():
         access_token = self._get_access_token(client_id, client_secret)
         self._igdb_wrapper = IGDBWrapper(client_id, access_token)
         
-        self.WAIT_TIME = 0.5
+        self.WAIT_TIME = 0.2
 
     def _get_access_token(self, client_id: str, client_secret: str) -> str:
         token_path = pathlib.Path.home() / ".vgdb/"
