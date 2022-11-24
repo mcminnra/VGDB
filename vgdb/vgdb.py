@@ -36,7 +36,7 @@ def update_db():
             igdb_client_id,
             igdb_client_secret
         )
-        igdb_ratelimiter = RateLimiter(max_calls=4, period=1)
+        igdb_ratelimiter = RateLimiter(max_calls=3, period=1)
         ps_client = PlaystationClient(
             ps_npsso
         )
@@ -304,7 +304,6 @@ def update_db():
                     igdb_id INT,
                     steam_appid INT,
                     ps_np_title_id TEXT
-
                 );
                 """
             )
@@ -326,6 +325,90 @@ def update_db():
             id_mapping_records
         )
 
+        # =====================================================================
+        # Get IGDB
+        # =====================================================================
+        igdb_ids  = pd.read_sql_query(
+            text(
+                """
+                SELECT igdb_id from id_mapping;
+                """
+            ),
+            conn
+        ).dropna().drop_duplicates().astype(int)['igdb_id'].values
+
+        igdb_records = []
+        for igdb_id in tqdm(igdb_ids, desc='IGDB Game Data'):
+            with igdb_ratelimiter:
+                record = igdb_client.get_game(igdb_id)
+            igdb_records.append(record)
+
+         # Convert tags to string to store in tables
+        for record in igdb_records:
+            record['platforms'] = str(record['platforms'])
+            record['genres'] = str(record['genres'])
+            record['themes'] = str(record['themes'])
+            record['keywords'] = str(record['keywords'])
+
+        conn.execute(text("""DROP TABLE IF EXISTS igdb_data;"""))
+        conn.execute(
+            text(
+                """
+                CREATE TABLE IF NOT EXISTS igdb_data (
+                    igdb_id INT UNIQUE,
+                    name TEXT,
+                    first_release_date INT,
+                    platforms TEXT,
+                    rating FLOAT,
+                    rating_count INT,
+                    critics_rating FLOAT,
+                    critics_rating_count INT,
+                    summary TEXT,
+                    storyline TEXT,
+                    genres TEXT,
+                    themes TEXT,
+                    keywords TEXT
+                );
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO igdb_data (
+                    igdb_id,
+                    name,
+                    first_release_date,
+                    platforms,
+                    rating,
+                    rating_count,
+                    critics_rating,
+                    critics_rating_count,
+                    summary,
+                    storyline,
+                    genres,
+                    themes,
+                    keywords
+                ) VALUES (
+                    :igdb_id,
+                    :name,
+                    :first_release_date,
+                    :platforms,
+                    :rating,
+                    :rating_count,
+                    :critics_rating,
+                    :critics_rating_count,
+                    :summary,
+                    :storyline,
+                    :genres,
+                    :themes,
+                    :keywords
+                );
+                """
+            ),
+            igdb_records
+        )
+                
 
 if __name__ == '__main__':
     update_db()

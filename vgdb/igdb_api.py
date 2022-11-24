@@ -38,6 +38,69 @@ class IGDBClient():
 
         return access_json['access_token']
 
+    def get_game(self, igdb_id: int) -> dict:
+        """
+        Get game metadata from IGDB ID
+        """
+        byte_array = self._igdb_wrapper.api_request(
+            'games',
+            #f'fields *; where id = {igdb_id};'
+            f'fields id, aggregated_rating, aggregated_rating_count, first_release_date, genres.name, keywords.name, name, platforms.name, rating, rating_count, storyline, summary, themes.name; where id = {igdb_id};'
+        )
+        games_response = json.loads(byte_array)
+        igdb_metadata = games_response[0]
+
+        # Add nulls to response if missing
+        fields = [
+            'id',
+            'aggregated_rating',
+            'aggregated_rating_count',
+            'first_release_date',
+            'genres',
+            'keywords',
+            'name',
+            'platforms',
+            'rating',
+            'rating_count',
+            'storyline',
+            'summary',
+            'themes'
+        ]
+        for k in fields:
+            if k not in igdb_metadata:
+                igdb_metadata[k] = None
+
+        # Convert expanded fields into lists
+        igdb_metadata['genres'] = [item['name'] for item in igdb_metadata['genres']] if igdb_metadata['genres'] else None
+        igdb_metadata['keywords'] = [item['name'] for item in igdb_metadata['keywords']] if igdb_metadata['keywords'] else None
+        igdb_metadata['platforms'] = [item['name'] for item in igdb_metadata['platforms']] if igdb_metadata['platforms'] else None
+        igdb_metadata['themes'] = [item['name'] for item in igdb_metadata['themes']] if igdb_metadata['themes'] else None
+
+        # Rename confusing fields
+        igdb_metadata['igdb_id'] = igdb_metadata.pop('id')
+        igdb_metadata['critics_rating'] = igdb_metadata.pop('aggregated_rating')
+        igdb_metadata['critics_rating_count'] = igdb_metadata.pop('aggregated_rating_count')
+
+        # Reorder
+        order = [
+            'igdb_id',
+            'name',
+            'first_release_date',
+            'platforms',
+            'rating',
+            'rating_count',
+            'critics_rating',
+            'critics_rating_count',
+            'summary', 
+            'storyline',
+            'genres',
+            'themes',
+            'keywords'
+        ]
+        igdb_metadata = {k: igdb_metadata[k] for k in order}
+
+        return igdb_metadata
+
     def get_igdb_id_by_steam_appid(self, steam_appid: int) -> int:
         """
         Get IGDB ID using Steam ID
