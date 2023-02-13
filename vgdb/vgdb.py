@@ -19,7 +19,8 @@ igdb_client_secret = config['igdb_client_secret']
 ps_npsso = config['ps_npsso']
 
 # Database engine
-engine = create_engine("sqlite:////mnt/g/My Drive/video_games/video_games.db", echo=True)
+#engine = create_engine("sqlite:////mnt/g/My Drive/video_games/video_games.db", echo=True)
+engine = create_engine("sqlite:////Users/mcminnra/gdrive/video_games/video_games.db", echo=True)
 
 def update_db():
     """

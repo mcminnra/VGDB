@@ -28,9 +28,10 @@ class PlaystationClient():
 
         # Get auth code
         cookies = {'npsso': npsso}
+        request_url = "https://ca.account.sony.com/api/authz/v3/oauth/authorize?access_type=offline&client_id=09515159-7237-4370-9b40-3806e67c0891&response_type=code&scope=psn:mobile.v2.core%20psn:clientapp&redirect_uri=com.scee.psxandroid.scecompcall://redirect"
 
         r = requests.get(
-            'https://ca.account.sony.com/api/authz/v3/oauth/authorize?access_type=offline&client_id=ac8d161a-d966-4728-b0ea-ffec22f69edc&redirect_uri=com.playstation.PlayStationApp%3A%2F%2Fredirect&response_type=code&scope=psn%3Amobile.v1%20psn%3Aclientapp',
+            request_url,
             cookies=cookies,
             allow_redirects=False
         )
@@ -40,12 +41,12 @@ class PlaystationClient():
         # Get access token
         data = {
             'code': auth_code,
-            'redirect_uri': "com.playstation.PlayStationApp://redirect",
+            'redirect_uri': "com.scee.psxandroid.scecompcall://redirect",
             'grant_type': "authorization_code",
             'token_format': "jwt"
         }
         headers = {
-            "Authorization": "Basic YWM4ZDE2MWEtZDk2Ni00NzI4LWIwZWEtZmZlYzIyZjY5ZWRjOkRFaXhFcVhYQ2RYZHdqMHY="
+            "Authorization": "Basic MDk1MTUxNTktNzIzNy00MzcwLTliNDAtMzgwNmU2N2MwODkxOnVjUGprYTV0bnRCMktxc1A="
         }
         r = requests.post(
             "https://ca.account.sony.com/api/authz/v3/oauth/token",
