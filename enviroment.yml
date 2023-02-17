@@ -8,8 +8,10 @@ dependencies:
   - numpy
   - pandas
   - requests
+  - scikit-learn
   - sqlalchemy
   - tqdm
+  - xgboost
   - pip
   - pip:
     - fuzzywuzzy

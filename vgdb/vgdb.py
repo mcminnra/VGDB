@@ -11,6 +11,7 @@ from steam_api import SteamClient
 
 from config import config  # TODO: Find a better way to manage secrets
 
+database_url = config['database_url']
 steam_url_name = config['steam_url_name']
 steam_user_id = config['steam_user_id']
 steam_web_api_key = config['steam_web_api_key']
@@ -19,8 +20,15 @@ igdb_client_secret = config['igdb_client_secret']
 ps_npsso = config['ps_npsso']
 
 # Database engine
-#engine = create_engine("sqlite:////mnt/g/My Drive/video_games/video_games.db", echo=True)
-engine = create_engine("sqlite:////Users/mcminnra/gdrive/video_games/video_games.db", echo=True)
+engine = create_engine(database_url, echo=True)
+
+
+def get_game_data():
+    with engine.connect() as conn:
+        df = pd.read_sql_query(text("""SELECT * FROM games_data;"""), conn)
+
+    return df
+
 
 def update_db():
     """
